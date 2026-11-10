@@ -2427,6 +2427,29 @@ func TestRunOnceSharedDeps(t *testing.T) {
 	assert.Contains(t, buff.String(), `task: [service-b:build] echo "build b"`)
 }
 
+func TestRunOnceSharedDepsMultiLevel(t *testing.T) {
+	t.Parallel()
+
+	const dir = "testdata/run_once_shared_deps_multi_level"
+
+	// The shared tools:exe task is included through two different nested
+	// namespaces (c:a:tools:exe and c:b:tools:exe), but run: once must still
+	// deduplicate it to a single execution.
+	var buff SyncBuffer
+	e := task.NewExecutor(
+		task.WithDir(dir),
+		task.WithStdout(&buff),
+		task.WithStderr(&buff),
+		task.WithForceAll(true),
+	)
+	require.NoError(t, e.Setup())
+	require.NoError(t, e.Run(t.Context(), &task.Call{Task: "all"}))
+
+	rx := regexp.MustCompile(`task: \[c:[a,b]:tools:exe\] echo "building tool"`)
+	matches := rx.FindAllStringSubmatch(buff.buf.String(), -1)
+	assert.Len(t, matches, 1)
+}
+
 func TestRunOnceSharedFailurePropagates(t *testing.T) {
 	t.Parallel()
 

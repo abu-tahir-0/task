@@ -1,0 +1,10 @@
+version: '3'
+
+includes:
+  c:
+    taskfile: ./lib/c
+
+tasks:
+  all:
+    deps:
+      - c:lib

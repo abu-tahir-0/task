@@ -167,7 +167,7 @@ func (t1 *Tasks) Merge(t2 *Tasks, include *Include, includedTaskfileVars *Vars) 
 			}
 
 			taskName = taskNameWithNamespace(name, include.Namespace)
-			task.Namespace = include.Namespace
+			task.Namespace = namespaceWithParent(include.Namespace, task.Namespace)
 			task.Task = taskName
 		}
 
@@ -249,4 +249,16 @@ func taskNameWithNamespace(taskName string, namespace string) string {
 		return after
 	}
 	return fmt.Sprintf("%s%s%s", namespace, NamespaceSeparator, taskName)
+}
+
+// namespaceWithParent prepends the namespace of the include being merged to the
+// namespace already tracked by the task. Tasks that come from nested includes
+// already carry the namespace chain of the included Taskfile, so this keeps the
+// full namespace path. [Task.LocalName] relies on it to recover the task's name
+// within its own Taskfile no matter how deep the include hierarchy is.
+func namespaceWithParent(parent, namespace string) string {
+	if namespace == "" {
+		return parent
+	}
+	return parent + NamespaceSeparator + namespace
 }
